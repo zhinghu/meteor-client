@@ -12,7 +12,7 @@ import meteordevelopment.meteorclient.events.entity.player.ItemUseCrosshairTarge
 import meteordevelopment.meteorclient.events.game.GameLeftEvent;
 import meteordevelopment.meteorclient.events.game.OpenScreenEvent;
 import meteordevelopment.meteorclient.events.game.ResourcePacksReloadedEvent;
-import meteordevelopment.meteorclient.events.game.WindowResizedEvent;
+import meteordevelopment.meteorclient.events.game.ResolutionChangedEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.gui.WidgetScreen;
 import meteordevelopment.meteorclient.mixininterface.IMinecraftClient;
@@ -111,8 +111,8 @@ public abstract class MinecraftClientMixin implements IMinecraftClient {
         doItemUseCalled = true;
     }
 
-    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;)V", at = @At("HEAD"))
-    private void onDisconnect(Screen screen, CallbackInfo info) {
+    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;Z)V", at = @At("HEAD"))
+    private void onDisconnect(Screen screen, boolean transferring, CallbackInfo info) {
         if (world != null) {
             MeteorClient.EVENT_BUS.post(GameLeftEvent.get());
         }
@@ -141,7 +141,7 @@ public abstract class MinecraftClientMixin implements IMinecraftClient {
         return MeteorClient.EVENT_BUS.post(ItemUseCrosshairTargetEvent.get(original)).target;
     }
 
-    @ModifyReturnValue(method = "reloadResources(Z)Ljava/util/concurrent/CompletableFuture;", at = @At("RETURN"))
+    @ModifyReturnValue(method = "reloadResources(ZLnet/minecraft/client/MinecraftClient$LoadingContext;)Ljava/util/concurrent/CompletableFuture;", at = @At("RETURN"))
     private CompletableFuture<Void> onReloadResourcesNewCompletableFuture(CompletableFuture<Void> original) {
         return original.thenRun(() -> MeteorClient.EVENT_BUS.post(ResourcePacksReloadedEvent.get()));
     }
@@ -163,7 +163,7 @@ public abstract class MinecraftClientMixin implements IMinecraftClient {
 
     @Inject(method = "onResolutionChanged", at = @At("TAIL"))
     private void onResolutionChanged(CallbackInfo info) {
-        MeteorClient.EVENT_BUS.post(WindowResizedEvent.get());
+        MeteorClient.EVENT_BUS.post(ResolutionChangedEvent.get());
     }
 
     @Inject(method = "getFramerateLimit", at = @At("HEAD"), cancellable = true)
